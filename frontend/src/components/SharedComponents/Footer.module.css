@@ -1,0 +1,43 @@
+.footer {
+  background-color: #faf1ed;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 12rem;
+}
+
+.boxSize {
+  height: 50%;
+  width: 70%;
+}
+
+.flex {
+  display: flex;
+}
+
+.webLogo {
+  max-width: 3rem;
+  max-height: 3rem;
+  border-radius: 100%;
+  margin: 0.5rem;
+}
+
+.tag {
+  width: 100%;
+}
+
+.tag a {
+  font-size: 0.7rem;
+  color: black;
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
+}
+
+.sentence {
+  font-size: 0.7rem;
+}
+
+.sentence a {
+  color: black;
+}

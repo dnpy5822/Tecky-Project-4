@@ -1,0 +1,157 @@
+name: ci-flow-react
+
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+env:
+  DOCKER_REPO_NAME: <your_username>/<your-repo-name>
+  POSTGRES_DB: ci
+  POSTGRES_USER: ci
+  POSTGRES_PASSWORD: ci
+  SERVER_USER: ubuntu
+  SERVER_DIR: /home/ubuntu/server
+  BUCKET_NAME: your-bucket-name
+  CLOUDFRONT_DISTRIBUTION: EXXXXXXXXXXXX
+  AWS_DEFAULT_REGION: ap-southeast-1
+
+jobs:
+  test-and-build-server:
+    runs-on: ubuntu-latest
+    container: node:lts-alpine
+    services:
+      db:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: ${{env.POSTGRES_DB}}
+          POSTGRES_USER: ${{env.POSTGRES_USER}}
+          POSTGRES_PASSWORD: ${{env.POSTGRES_PASSWORD}}
+        ports:
+          - 5432:5432
+    env:
+      PORT: 8080
+      DB_HOST: db
+      DB_PORT: 5432
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install npm deps
+        working-directory: server
+        run: |
+          npm i
+      - name: Migrate database with knex
+        working-directory: server
+        run: |
+          npx knex migrate:latest
+      - name: Build project
+        working-directory: server
+        run: |
+          npm run build
+      - name: Run testing
+        working-directory: server
+        run: |
+          npm run ci
+      - name: archive built files
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: server/dist
+
+  deploy-server-to-docker:
+    needs: test-and-build-server
+    runs-on: ubuntu-latest
+    container: docker:20.10.21-alpine3.16
+    steps:
+      - uses: actions/checkout@v3
+      - name: restore built files server
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: server/dist
+      - name: Build docker image for server
+        working-directory: server
+        run: |
+          docker build -t server .
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Do Docker tag and push
+        working-directory: server
+        run: |
+          docker tag server:latest ${{ env.DOCKER_REPO_NAME }}
+          docker push ${{ env.DOCKER_REPO_NAME }}
+
+  ssh-ec2-and-compose-up:
+    needs: deploy-server-to-docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executing remote ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          username: ${{ env.SERVER_USER }}
+          script: |
+            cd ${{ env.SERVER_DIR }}
+            sudo usermod -aG docker ${{ env.SERVER_USER }}
+            sudo service docker restart
+            docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+            sudo docker-compose pull
+            sudo docker-compose up -d && sudo docker ps
+
+  test-and-build-react:
+    runs-on: ubuntu-latest
+    container: node:lts-alpine
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install yarn deps
+        working-directory: frontend
+        run: yarn install
+      - name: run testing
+        working-directory: frontend
+        run: yarn run test
+      - name: Build frondend project
+        working-directory: frontend
+        env:
+          REACT_APP_DUMMY_ENVIRONMENTS: some_variables_in_project_dotenv_file
+          REACT_APP_DUMMY_SERVER_ORIGIN: somedomain.io
+          REACT_APP_DUMMY_SOME_SERVER_KEY: nevergonnagiveyouupnevergonnaletyoudown
+        run: yarn run build
+      - name: Archive react built files
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: frontend/build
+
+  deploy-react-to-aws:
+    needs:
+      - test-and-build-react
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Restore frontend files
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: frontend/build
+      - name: Check built files in server
+        working-directory: frontend
+        run: |
+          ls build/index.html
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Deploy to s3 and cloudfront
+        working-directory: frontend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+        run: |
+          aws s3 sync ./build s3://${{env.BUCKET_NAME}} --delete
+          aws cloudfront create-invalidation --distribution-id ${{env.CLOUDFRONT_DISTRIBUTION}} --paths "/*"

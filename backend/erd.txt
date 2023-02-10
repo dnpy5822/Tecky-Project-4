@@ -1,0 +1,104 @@
+user
+----
+id 
+username varchar(255) nullable
+password_hash varchar(60) nullable
+email varchar(255)
+avatar varchar(2048)
+isAdmin boolean
+
+
+country
+-------
+id
+name varchar(50)
+activity_id fk
+
+
+activity
+----
+id
+name varchar(100)
+opening_time varchar(20)
+closing_hour varchar(20)
+description text
+type varchar(20)
+rating integer
+likes integer
+latitude varchar(20)
+longitude(20)
+created_at timestamp
+updated_at timestamp
+
+
+tag
+---
+id
+name varchar(50)
+
+activity_tag
+------------
+id
+tag_id fk
+activity_id fk
+
+
+comment
+-------
+id
+title varchar(50)
+context text
+rating integer
+activity_id fk
+created_at timestamp
+updated_at timestamp
+
+
+schedule
+--------
+id
+name varchar(50)
+type varchar(20)
+privacy varchar(20)
+created_at timestamp
+updated_at timestamp
+
+
+content
+-------------
+id
+schedule_id fk
+day varchar(10)
+action varchar(100)
+activity_id integer fk
+start_time timestamp
+end_time timestamp
+created_at timestamp
+updated_at timestamp
+
+
+user_schedule
+-------------
+id
+user_id fk
+schedule_id fk
+
+activity_image
+---------------
+id
+activity_id fk
+image varchar(255)
+created_at timestamp
+updated_at timestamp
+
+
+# user (36, 34)
+# country (189, 196)
+# tag (52, 332)
+# comment (214, 490)
+# schedule (537, 14)
+# content (782, 29)
+# user_schedule (317, 20)
+# activity (508, 254)
+# activity_image (801, 317)
+# activity_tag (260, 337)

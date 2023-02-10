@@ -1,0 +1,12 @@
+.display {
+  display: flex;
+  justify-content: space-between;
+}
+
+.schedule {
+  width: 60%;
+}
+
+.map {
+  width: 40%;
+}

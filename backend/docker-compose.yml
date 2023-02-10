@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  trip-server:
+    environment:
+      NODE_ENV: production
+      PORT: 80
+      POSTGRES_HOST: trip-db
+      POSTGRES_PORT: 5432
+    env_file:
+      - docker.env
+    depends_on:
+      - trip-db
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    image: "leochanyk/trip-planner-backend-server:latest"
+    ports:
+      - "8080:8080"
+  trip-db:
+    image: "postgres:13"
+    environment:
+      POSTGRES_PORT: 5432
+    env_file:
+      - docker.env
+    ports:
+      - "25432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data

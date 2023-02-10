@@ -1,0 +1,45 @@
+.webLogo{
+    max-width: 3rem ;
+    max-height: 3rem;
+    border-radius: 100%;
+    margin: 0.5rem;
+}
+.logo{
+    display: flex;
+    align-items: center;
+}
+
+.body{
+    padding: 1rem;
+    border-bottom: solid rgba($color: grey, $alpha: 0.3) ;
+}
+.format{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 2rem  ;
+}
+.flex{
+    display:flex;
+    align-items:center;
+    padding: 2px;
+    margin: 0;
+}
+.border{
+    position: sticky;
+    top:0;
+}
+.modallastrow{
+    display: flex;
+    justify-content: space-between;
+}
+.modaltext{
+    font-size: small;
+    color: grey;
+    padding: 2px;
+}
+.modaltext:hover{
+    text-decoration: underline rgba($color: grey, $alpha: 0.7);
+}

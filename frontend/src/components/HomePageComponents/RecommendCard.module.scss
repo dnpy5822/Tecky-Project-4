@@ -1,0 +1,16 @@
+// Below for Suggestion Card
+.suggestiondisplay {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.suggestionmargin {
+    margin: 5px;
+    padding: 5px;
+    width: 300px;
+}
+
+.wordbreak {
+    font-size: 20px;
+    word-break: break-all;
+}

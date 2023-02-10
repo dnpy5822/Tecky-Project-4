@@ -1,0 +1,200 @@
+import { useEffect, useState } from 'react';
+import { useGet } from '../../hooks/useGet';
+import { DatePicker, TimeInput } from '@mantine/dates';
+import { Modal, Button, Text, NavLink, Space } from '@mantine/core';
+import { IconHeart } from '@tabler/icons';
+import { fetchNonGetData } from '../../utilis';
+import { useEvent } from 'react-use-event'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import styles from './SaveButton.module.css';
+import toast from 'react-hot-toast';
+import { UnBookmarkActivityEvent } from '../../hooks/useTripEvent';
+
+type TripListFromServer = {
+    error?: string
+    //tripLIst should looks like this:
+    //[
+    //  {id: 1, name: "Japan"},
+    //  {id: 2, name: "UK"}
+    //]
+    tripData?: {
+        id: string
+        name: string
+    }[]
+}
+
+export default function SaveButton({ activityId }: { activityId: number }) {
+
+    const [opened, setOpened] = useState(false);
+    const [secondModalOpened, setSecondModalOpened] = useState(false);
+    const [tripId, setTripId] = useState("");
+    const [eventDate, setEventDate] = useState<Date | string>(new Date());
+    const [eventStartTime, setEventStartTime] = useState<Date | string>(new Date());
+    const [eventEndTime, setEventEndTime] = useState<Date | string>(new Date());
+    const [counter, setCounter] = useState(0)
+    const [color, setColor] = useState('dark');
+    const [isSaved, setIsSaved] = useState(false);
+
+    const dispatchUnBookmarkActivityEvent = useEvent<UnBookmarkActivityEvent>("un-bookmark-activity",);
+
+    ////////////This is for finding the "Name of Trips" under the current user, then show them in the modal////////////
+    const tripResult = useGet<TripListFromServer>("/tripListFromServer", {})    //fetch to trip.routes
+    const tripList = tripResult.state.tripData
+
+    async function saveButtonIsPressed() {
+        let result = await fetchNonGetData("/insertActivity", "POST", {  //fetch to trip.routes
+            activityId,       //get from props
+            tripId,           //get from first modal
+            eventDate,        //get from second modal
+            eventStartTime,   //get from second modal
+            eventEndTime,     //get from second modal
+        });
+        console.log("result: ", result);
+
+
+        if (result.status) {
+            setSecondModalOpened(false);
+            setOpened(false);
+            setCounter(counter => counter + 1);
+            toast.success(result.message);
+        }
+        else {
+            toast.error(result.message);
+        }
+    }
+
+    async function checkIsSaved() {
+        let result = await fetchNonGetData('/checkIsSaved', "POST", { data: activityId });
+        console.log("result.isSaved.length: ", result.isSaved.length);
+
+        if (result.isSaved.length >= 1) {
+            setColor('red');
+            setIsSaved(true);
+        }
+        else {
+            setColor('dark');
+            setIsSaved(false);
+        }
+    }
+
+    async function deleteSavedActivity() {
+        let result = await fetchNonGetData("/deleteSavedActivity", "DELETE", { data: activityId });
+        console.log("activityId in savedButton: ", activityId);
+
+        if (result.status) {
+            setCounter(counter => counter + 1);
+            toast.success(result.message);
+            dispatchUnBookmarkActivityEvent({ id: activityId })
+        }
+        else {
+            toast.error(result.message);
+        }
+    }
+
+    useEffect(() => {
+        checkIsSaved();
+    }, [counter])
+
+    return (
+        <>
+            <Button
+                variant="subtle"
+                color={color}
+                radius="xl"
+                size="xs"
+                onClick={() => {
+                    console.log("activityId: ", activityId);
+                    isSaved ? deleteSavedActivity() : setOpened(true)
+                }}>
+                <IconHeart />
+            </Button>
+
+            {/* First Modal */}
+            <Modal
+                opened={opened}
+                onClose={() => setOpened(false)}
+                title={<Text> <IconHeart /> Save to a Trip</Text>}
+            >
+                {tripList?.map((v) =>
+                    <NavLink
+                        key={v.name}
+                        className="m-3"
+                        label={v.name}
+                        // rightSection={isSaved ? <IconHeart size={18} color="red" /> : ""}    ////////maybe add this back later
+                        onClick={() => {
+                            setTripId(v.id)
+                            setSecondModalOpened(true);
+
+                            console.log(`tripName: ${v.name}`)
+                            console.log(`tripId: ${v.id}`);
+                        }}
+                    />
+                )}
+            </Modal>
+
+            {/* Second Modal */}
+            <Modal
+                opened={secondModalOpened}
+                onClose={() => setSecondModalOpened(false)}
+                title={<Text> <IconHeart /> Select Date and Time</Text>}
+            >
+                <DatePicker
+                    placeholder="Pick a date for this activity"
+                    label="Event date"
+                    withAsterisk
+                    defaultValue={new Date()}
+                    onChange={(value: Date) => {
+                        setEventDate(value);
+                    }}
+                />
+
+                <TimeInput
+                    defaultValue={new Date()}
+                    label="Start Time:"
+                    radius="md"
+                    amLabel="am"
+                    pmLabel="pm"
+                    withAsterisk
+                    onChange={(value: Date) => {
+                        setEventStartTime(value);
+                    }}
+                />
+
+                <TimeInput
+                    defaultValue={new Date()}
+                    label="End Time:"
+                    radius="md"
+                    amLabel="am"
+                    pmLabel="pm"
+                    withAsterisk
+                    onChange={(value: Date) => {
+                        setEventEndTime(value);
+                    }}
+                />
+
+                <Space h="md" />
+
+                <div className={styles.position}>
+                    <Button
+                        style={{ textAlign: "right" }}
+                        variant="outline"
+                        color="dark"
+                        radius="xl"
+                        type="submit"
+                        onClick={async () => {
+                            console.log("activityID: ", activityId);
+                            console.log("tripId: ", tripId);
+                            console.log("eventDate: ", eventDate);
+                            console.log("eventStartTime: ", eventStartTime);
+                            console.log("eventEndTime: ", eventEndTime);
+                            saveButtonIsPressed()
+                        }}
+                    >
+                        Save
+                    </Button>
+                </div>
+            </Modal>
+        </>
+
+    )
+}

@@ -1,0 +1,22 @@
+// $smallpadding: 24px;
+// $largepadding: 60px;
+
+// .padding{
+//     @media screen and (max-width: 900px) {
+//         padding-left: $largepadding;
+//         padding-right: $largepadding;
+//     }
+//     @media screen and (min-width: 480px) {
+//         padding-left: $smallpadding;
+//         padding-right: $smallpadding
+//     }
+// }
+
+.bgcancel {
+    position: absolute;
+    background-color: hsla(0, 100%, 90%, 0.3);
+    // background-color: grey;
+    inset: 0;
+    height: 200vh;
+}
+

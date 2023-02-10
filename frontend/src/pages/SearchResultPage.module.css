@@ -1,0 +1,27 @@
+.title{
+    font-size: 50px;
+}
+
+.title span{
+    color: #ff5d5d;
+}
+
+.pictures{
+    height: 500px;
+    width: 100%;
+}
+
+.position{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.subtitle{
+    font-size: 2rem;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+.description{
+    color: grey;
+}

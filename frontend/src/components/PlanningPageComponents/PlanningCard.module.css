@@ -1,0 +1,8 @@
+.cardSize{
+    width: 100%;
+    height: 306px;
+}
+
+.cardSize:hover{
+    cursor: pointer;
+}
